@@ -58,7 +58,35 @@ function openApp(u){window.open(u,'_blank','noopener')}
 function showHelp(){ $('help').classList.add('show') }function closeHelp(){ $('help').classList.remove('show') }
 
 function unlockVoice(){if(!('speechSynthesis' in window))return;try{speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(' ');u.lang='de-DE';u.volume=0;speechSynthesis.speak(u)}catch(e){}}
-function speak(text){if(!('speechSynthesis' in window)){ $('state').textContent='Sprachausgabe wird von diesem Browser nicht unterstützt.';return}try{speechSynthesis.cancel();speechSynthesis.resume();let u=new SpeechSynthesisUtterance(text);u.lang='de-DE';u.rate=.92;u.pitch=.9;u.volume=1;u.onstart=()=>{$('coreState').textContent='SPRICHT';$('mic').classList.add('speaking')};u.onend=()=>{$('coreState').textContent='VERARBEITET';$('mic').classList.remove('speaking')};speechSynthesis.speak(u)}catch(e){$('state').textContent='Sprachausgabe konnte nicht gestartet werden.'}}
+function speak(text){
+if(!('speechSynthesis' in window))return;
+speechSynthesis.cancel();
+
+let voices=speechSynthesis.getVoices();
+let voice=
+voices.find(v=>v.lang==='de-DE'&&/Anna|Google|Microsoft|Siri/i.test(v.name))||
+voices.find(v=>v.lang==='de-DE')||
+voices.find(v=>v.lang.startsWith('de'));
+
+let u=new SpeechSynthesisUtterance(text);
+u.lang='de-DE';
+u.voice=voice||null;
+u.rate=0.88;
+u.pitch=0.82;
+u.volume=1;
+
+u.onstart=()=>{
+$('coreState').textContent='SPRICHT';
+$('mic').classList.add('speaking');
+};
+
+u.onend=()=>{
+$('coreState').textContent='VERARBEITET';
+$('mic').classList.remove('speaking');
+};
+
+speechSynthesis.speak(u);
+}
 function makeAnswer(t){let s=t.toLowerCase();if(/uhr|zeit/.test(s))return`Es ist ${new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}, Chef.`;if(/wetter|hannover/.test(s))return`In Hannover sind es aktuell ${$('temp').textContent}. ${$('wtext').textContent}. Regenwahrscheinlichkeit heute ${$('rain').textContent}.`;if(/ethereum|ether|eth/.test(s))return`Ethereum steht aktuell bei ${$('eth').textContent}. Die 24-Stunden-Bewegung beträgt ${$('ethc').textContent}.`;if(/usdt|tether/.test(s))return`Tether liegt aktuell bei ${$('usdt').textContent}.`;if(/hallo|hey|jarvis/.test(s))return`Zu Ihren Diensten, Jonas.`;if(/danke/.test(s))return`Sehr gerne, Master.`;return`Verstanden, Jonas. Ich habe Ihren Befehl erkannt. Für diesen Befehl ist meine lokale Version noch nicht mit einer vollständigen KI verbunden.`}
 function command(t){$('transcript').textContent='„'+t+'“';let a=makeAnswer(t);$('answer').textContent=a;speak(a)}
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,listening=false,finalText='',pauseTimer=null;
